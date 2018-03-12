@@ -20,17 +20,21 @@ import android.widget.VideoView;
 
 import net.xeill.elpuig.thinkitapp.R;
 import net.xeill.elpuig.thinkitapp.view.manager.LocaleManager;
+import net.xeill.elpuig.thinkitapp.view.manager.SoundManager;
 
 public class MainActivity extends AppCompatActivity {
-    MediaPlayer musicPlayer;
-    MediaPlayer playSoundPlayer;
+//    MediaPlayer musicPlayer;
+//    MediaPlayer playSoundPlayer;
+//    private SoundPool soundPool;
+//    private int soundIds[] = new int[2];
+
+    SoundManager soundManager;
+
     VideoView bgVideo;
     Handler mSplashHandler;
     SharedPreferences settings;
     FloatingActionButton volumeFAB;
 
-    private SoundPool soundPool;
-    private int soundIds[] = new int[2];
 
     private int volume = 0;
 
@@ -38,6 +42,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        System.out.println("MYTAG ON CREAATEEEEE");
 
         settings=getSharedPreferences("prefs", 0);
 
@@ -54,20 +60,29 @@ public class MainActivity extends AppCompatActivity {
 
         mSplashHandler = new Handler();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            soundPool = new SoundPool.Builder().setMaxStreams(2)
-                    .build();
-        } else {
-            soundPool = new SoundPool(2, AudioManager.STREAM_MUSIC, 0);
-        }
+        soundManager = new SoundManager.Builder(this)
+                .addSound(R.raw.play)
+                .addAudio(R.raw.modern_theme_nicolai_heidlas)
+                .build();
+
+        soundManager.setOnLoadCompleteListener(new SoundManager.OnLoadCompleteListener() {
+            @Override
+            public void onLoadComplete(SoundManager soundManager) {
+                System.out.println("MYTAG " + "completed");
+                soundManager.playAudio(R.raw.modern_theme_nicolai_heidlas);
+            }
+        });
+
+        soundManager.load();
 
         //Unused music from soundpool, using MediaPlayer
 //        soundIds[0] = soundPool.load(this, R.raw.modern_theme_nicolai_heidlas,1);
-        soundIds[1] = soundPool.load(this, R.raw.play,1);
 
-        musicPlayer = MediaPlayer.create(this,  R.raw.modern_theme_nicolai_heidlas);
-        musicPlayer.setLooping(true);
-        musicPlayer.start();
+//        soundIds[1] = soundPool.load(this, R.raw.play,1);
+//
+//        musicPlayer = MediaPlayer.create(this,  R.raw.modern_theme_nicolai_heidlas);
+//        musicPlayer.setLooping(true);
+//        musicPlayer.start();
 
 //        playSoundPlayer = MediaPlayer.create(this,R.raw.play);
 
@@ -114,7 +129,8 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 playButton.setActivated(true);
 //                playSoundPlayer.start();
-                soundPool.play(soundIds[1], volume, volume, 1, 0, 1);
+                //soundPool.play(soundIds[1], volume, volume, 1, 0, 1);
+                soundManager.playSound(R.raw.play);
 
                 mSplashHandler.postDelayed(new Runnable() {
                     @Override
@@ -127,7 +143,8 @@ public class MainActivity extends AppCompatActivity {
                                     .setPositiveButton(R.string.dialog_yes, new DialogInterface.OnClickListener() {
                                         public void onClick(DialogInterface dialog, int id) {
 //                                            soundPool.stop(soundIds[0]);
-                                            musicPlayer.stop();
+                                            //musicPlayer.stop();
+                                            soundManager.stopAudios();
                                             Intent playIntent = new Intent(MainActivity.this,MathsTutorialActivity.class);
                                             startActivity(playIntent);
                                         }
@@ -135,7 +152,8 @@ public class MainActivity extends AppCompatActivity {
                                     .setNegativeButton(R.string.dialog_no, new DialogInterface.OnClickListener() {
                                         public void onClick(DialogInterface dialog, int id) {
 //                                            soundPool.stop(soundIds[0]);
-                                            musicPlayer.stop();
+                                            soundManager.stopAudios();
+//                                            musicPlayer.stop();
                                             Intent playIntent = new Intent(MainActivity.this,MathsActivity.class);
                                             startActivity(playIntent);
                                         }
@@ -218,7 +236,8 @@ public class MainActivity extends AppCompatActivity {
 //        soundPool.setVolume(soundIds[1],1f,1f);
 //        playSoundPlayer.setVolume(1f,1f);
 
-        musicPlayer.setVolume(0.8f,0.8f);
+        //soundManager.setMuted(false);
+//        musicPlayer.setVolume(0.8f,0.8f);
         volume=1;
         volumeFAB.setActivated(true);
 //        ViewCompat.setBackgroundTintList(volumeFAB, ColorStateList.valueOf(getResources().getColor(R.color.colorPrimary)));
@@ -229,7 +248,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void setMute() {
         volume=0;
-        musicPlayer.setVolume(0,0);
+        //soundManager.setMuted(true);
+//        musicPlayer.setVolume(0,0);
         volumeFAB.setActivated(false);
 //        ViewCompat.setBackground(volumeFAB,getResources().getDrawable(R.drawable.fab_volume));
 //        ViewCompat.setBackgroundTintList(volumeFAB, ColorStateList.valueOf(getResources().getColor(R.color.color_grey_disabled)));
@@ -241,9 +261,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if(musicPlayer!=null && musicPlayer.isPlaying()){
-            musicPlayer.pause();
-        }
+//        if(musicPlayer!=null && musicPlayer.isPlaying()){
+//            musicPlayer.pause();
+//        }
+        soundManager.pauseAudios();
 
         if(bgVideo!=null && bgVideo.isPlaying()){
             bgVideo.pause();
@@ -253,9 +274,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if(musicPlayer!=null && !musicPlayer.isPlaying()){
-            musicPlayer.start();
-        }
+//        if(musicPlayer!=null && !musicPlayer.isPlaying()){
+//            musicPlayer.start();
+//        }
+        soundManager.resumeAudios();
 
         if(bgVideo!=null && !bgVideo.isPlaying()){
             bgVideo.start();
