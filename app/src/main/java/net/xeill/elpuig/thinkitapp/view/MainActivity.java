@@ -23,10 +23,6 @@ import net.xeill.elpuig.thinkitapp.view.manager.LocaleManager;
 import net.xeill.elpuig.thinkitapp.view.manager.SoundManager;
 
 public class MainActivity extends AppCompatActivity {
-//    MediaPlayer musicPlayer;
-//    MediaPlayer playSoundPlayer;
-//    private SoundPool soundPool;
-//    private int soundIds[] = new int[2];
 
     SoundManager soundManager;
 
@@ -35,7 +31,6 @@ public class MainActivity extends AppCompatActivity {
     SharedPreferences settings;
     FloatingActionButton volumeFAB;
 
-
     private int volume = 0;
 
     @Override
@@ -43,10 +38,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        System.out.println("MYTAG ON CREAATEEEEE");
-
         settings=getSharedPreferences("prefs", 0);
-
 
         if (settings.getBoolean("isFirstRun",true)) {
             settings.edit().putBoolean("mute",false).apply();
@@ -62,32 +54,10 @@ public class MainActivity extends AppCompatActivity {
 
         soundManager = new SoundManager.Builder(this)
                 .addSound(R.raw.play)
-                .addAudio(R.raw.modern_theme_nicolai_heidlas)
                 .build();
-
-        soundManager.setOnLoadCompleteListener(new SoundManager.OnLoadCompleteListener() {
-            @Override
-            public void onLoadComplete(SoundManager soundManager) {
-                System.out.println("MYTAG " + "completed");
-                soundManager.playAudio(R.raw.modern_theme_nicolai_heidlas);
-            }
-        });
-
         soundManager.load();
 
-        //Unused music from soundpool, using MediaPlayer
-//        soundIds[0] = soundPool.load(this, R.raw.modern_theme_nicolai_heidlas,1);
-
-//        soundIds[1] = soundPool.load(this, R.raw.play,1);
-//
-//        musicPlayer = MediaPlayer.create(this,  R.raw.modern_theme_nicolai_heidlas);
-//        musicPlayer.setLooping(true);
-//        musicPlayer.start();
-
-//        playSoundPlayer = MediaPlayer.create(this,R.raw.play);
-
         volumeFAB = findViewById(R.id.volume_fab);
-
         volumeFAB.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -96,64 +66,45 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     setUnmute();
                 }
-
             }
         });
 
-        if(settings.getBoolean("mute",true)) {
-            setMute();
-        } else {
-            setUnmute();
-        }
-
-//        soundPool.play(soundIds[0], volume, volume, 1, 1, 1);
-
-
         bgVideo = findViewById(R.id.bg_video);
         bgVideo.setVideoURI(Uri.parse("android.resource://net.xeill.elpuig.thinkitapp/" + R.raw.background2));
-
         bgVideo.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
             public void onPrepared(MediaPlayer mp) {
                 mp.setLooping(true);
             }
         });
-
         bgVideo.start();
-
-
 
         final ImageView playButton = findViewById(R.id.play_button_image);
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 playButton.setActivated(true);
-//                playSoundPlayer.start();
-                //soundPool.play(soundIds[1], volume, volume, 1, 0, 1);
+
                 soundManager.playSound(R.raw.play);
 
                 mSplashHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
 
-
 //                        if (settings.getBoolean("isFirstPlay", true)) {
                             new AlertDialog.Builder(MainActivity.this)
                                     .setMessage(R.string.tutorial_msg)
                                     .setPositiveButton(R.string.dialog_yes, new DialogInterface.OnClickListener() {
                                         public void onClick(DialogInterface dialog, int id) {
-//                                            soundPool.stop(soundIds[0]);
-                                            //musicPlayer.stop();
                                             soundManager.stopAudios();
+
                                             Intent playIntent = new Intent(MainActivity.this,MathsTutorialActivity.class);
                                             startActivity(playIntent);
                                         }
                                     })
                                     .setNegativeButton(R.string.dialog_no, new DialogInterface.OnClickListener() {
                                         public void onClick(DialogInterface dialog, int id) {
-//                                            soundPool.stop(soundIds[0]);
                                             soundManager.stopAudios();
-//                                            musicPlayer.stop();
                                             Intent playIntent = new Intent(MainActivity.this,MathsActivity.class);
                                             startActivity(playIntent);
                                         }
@@ -178,8 +129,6 @@ public class MainActivity extends AppCompatActivity {
                 }, 1000L);
             }
         });
-
-
 
         FloatingActionButton languageFAB = findViewById(R.id.language_fab);
         languageFAB.setOnClickListener(new View.OnClickListener() {
@@ -232,13 +181,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void setUnmute() {
         //TODO: Controlar volumen across the activities
-//        soundPool.setVolume(soundIds[0],0.8f,0.8f);
-//        soundPool.setVolume(soundIds[1],1f,1f);
-//        playSoundPlayer.setVolume(1f,1f);
+        soundManager.setMuted(false);
 
-        //soundManager.setMuted(false);
-//        musicPlayer.setVolume(0.8f,0.8f);
-        volume=1;
         volumeFAB.setActivated(true);
 //        ViewCompat.setBackgroundTintList(volumeFAB, ColorStateList.valueOf(getResources().getColor(R.color.colorPrimary)));
         volumeFAB.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.colorPrimary)));
@@ -247,9 +191,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setMute() {
-        volume=0;
-        //soundManager.setMuted(true);
-//        musicPlayer.setVolume(0,0);
+        soundManager.setMuted(true);
+
         volumeFAB.setActivated(false);
 //        ViewCompat.setBackground(volumeFAB,getResources().getDrawable(R.drawable.fab_volume));
 //        ViewCompat.setBackgroundTintList(volumeFAB, ColorStateList.valueOf(getResources().getColor(R.color.color_grey_disabled)));
@@ -261,9 +204,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-//        if(musicPlayer!=null && musicPlayer.isPlaying()){
-//            musicPlayer.pause();
-//        }
+        System.out.println("ASD PAUSEEEEEEE");
         soundManager.pauseAudios();
 
         if(bgVideo!=null && bgVideo.isPlaying()){
@@ -274,13 +215,38 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-//        if(musicPlayer!=null && !musicPlayer.isPlaying()){
-//            musicPlayer.start();
-//        }
+        System.out.println("ASD ONRESUME");
+
+        if(settings.getBoolean("mute",true)) {
+            setMute();
+        } else {
+            setUnmute();
+        }
+
         soundManager.resumeAudios();
 
         if(bgVideo!=null && !bgVideo.isPlaying()){
             bgVideo.start();
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        System.out.println("ASD OnStart");
+        soundManager.playAudio(R.raw.modern_theme_nicolai_heidlas);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        System.out.println("ASD onSTop");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        System.out.println("ASD onDestroy");
+        soundManager.release();
     }
 }

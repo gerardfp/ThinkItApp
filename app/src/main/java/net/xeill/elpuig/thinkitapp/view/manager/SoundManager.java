@@ -25,7 +25,6 @@ public class SoundManager {
     public static class Builder {
         Context context;
         ArrayList<Integer> sounds = new ArrayList<>();
-        ArrayList<Integer> audios = new ArrayList<>();
 
         public Builder(Context context) {
             this.context = context;
@@ -36,13 +35,8 @@ public class SoundManager {
             return this;
         }
 
-        public Builder addAudio(int resId) {
-            audios.add(resId);
-            return this;
-        }
-
         public SoundManager build() {
-            return new SoundManager(context, sounds, audios);
+            return new SoundManager(context, sounds);
         }
     }
 
@@ -50,7 +44,6 @@ public class SoundManager {
     private Context context;
 
     ArrayList<Integer> sounds = new ArrayList<>();
-    ArrayList<Integer> audios = new ArrayList<>();
 
     private SoundPool mSoundPool;
     private SparseIntArray mSoundPoolMap = new SparseIntArray();
@@ -58,7 +51,6 @@ public class SoundManager {
     private Handler mHandler = new Handler();
 
     SparseArray<MediaPlayer> mMediaPlayerMap = new SparseArray<>();
-    SparseArray<Boolean> mMediaPlayerLoadedMap = new SparseArray<>();
     SparseArray<Boolean> mMediaPlayerPausedMap = new SparseArray<>();
 
     private boolean mMuted = false;
@@ -67,10 +59,9 @@ public class SoundManager {
     private static final int MAX_STREAMS = 2;
     private static final int STOP_DELAY_MILLIS = 3000;
 
-    public SoundManager(Context context, final ArrayList<Integer> sounds, ArrayList<Integer> audios) {
+    public SoundManager(Context context, final ArrayList<Integer> sounds) {
         this.context = context;
         this.sounds = sounds;
-        this.audios = audios;
     }
 
     public void load(){
@@ -98,21 +89,6 @@ public class SoundManager {
                 }
             });
         }
-        if (audios.size() > 0) {
-            for (final Integer audio: audios) {
-                MediaPlayer mediaPlayer = MediaPlayer.create(context, audio);
-                mMediaPlayerLoadedMap.put(audio, false);
-                mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                    @Override
-                    public void onPrepared(MediaPlayer mediaPlayer) {
-                        mMediaPlayerLoadedMap.put(audio, true);
-                        dispatchOnLoadComplete();
-                    }
-                });
-                mMediaPlayerMap.put(audio, mediaPlayer);
-                mMediaPlayerPausedMap.put(audio, false);
-            }
-        }
     }
 
     public void setOnLoadCompleteListener(OnLoadCompleteListener onLoadCompleteListener) {
@@ -127,9 +103,6 @@ public class SoundManager {
         Boolean loaded = true;
         for (int i = 0; i < mSoundPoolLoadedMap.size(); i++) {
             loaded = loaded && mSoundPoolLoadedMap.get(mSoundPoolLoadedMap.keyAt(i));
-        }
-        for (int i = 0; i < mMediaPlayerLoadedMap.size(); i++) {
-            loaded = loaded && mMediaPlayerLoadedMap.get(mMediaPlayerLoadedMap.keyAt(i));
         }
 
         if(loaded) {
@@ -146,23 +119,39 @@ public class SoundManager {
         scheduleSoundStop(soundId);
     }
 
-    public void playAudio(int audioId) {
-        mMediaPlayerMap.get(audioId).setLooping(true);
-        mMediaPlayerMap.get(audioId).start();
+    public void playAudio(final int audioId) {
+        try {
+            mMediaPlayerMap.get(audioId).start();
+        } catch (Exception e) {
+            MediaPlayer mediaPlayer = MediaPlayer.create(context, audioId);
+            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mediaPlayer) {
+                    setMuted(mMuted);
+                    mediaPlayer.setLooping(true);
+                    mediaPlayer.start();
+                }
+            });
+            mMediaPlayerMap.put(audioId, mediaPlayer);
+        }
     }
 
     public void stopAudios() {
         for (int i = 0; i < mMediaPlayerMap.size(); i++) {
-            mMediaPlayerMap.get(mMediaPlayerMap.keyAt(i)).stop();
+            mMediaPlayerMap.get(mMediaPlayerMap.keyAt(i)).release();
         }
     }
 
     public void pauseAudios() {
         for (int i = 0; i < mMediaPlayerMap.size(); i++) {
-            MediaPlayer mediaPlayer = mMediaPlayerMap.get(mMediaPlayerMap.keyAt(i));
-            if(mediaPlayer.isPlaying()) {
-                mediaPlayer.pause();
-                mMediaPlayerPausedMap.put(mMediaPlayerMap.keyAt(i), true);
+            try {
+                MediaPlayer mediaPlayer = mMediaPlayerMap.get(mMediaPlayerMap.keyAt(i));
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                    mMediaPlayerPausedMap.put(mMediaPlayerMap.keyAt(i), true);
+                }
+            } catch (Exception e) {
+
             }
         }
     }
@@ -170,8 +159,19 @@ public class SoundManager {
     public void resumeAudios() {
         for (int i = 0; i < mMediaPlayerPausedMap.size(); i++) {
             if(mMediaPlayerPausedMap.get(mMediaPlayerPausedMap.keyAt(i))){
-                mMediaPlayerMap.get(mMediaPlayerMap.keyAt(i)).start();
+                try {
+                    setMuted(mMuted);
+                    mMediaPlayerMap.get(mMediaPlayerMap.keyAt(i)).start();
+                } catch (Exception e){
+
+                }
             }
+        }
+    }
+
+    public void release(){
+        for (int i = 0; i < mMediaPlayerMap.size(); i++) {
+            mMediaPlayerMap.get(mMediaPlayerMap.keyAt(i)).release();
         }
     }
 
@@ -188,11 +188,19 @@ public class SoundManager {
 
         if(muted) {
             for (int i = 0; i < mMediaPlayerMap.size(); i++) {
-                mMediaPlayerMap.get(mMediaPlayerMap.keyAt(i)).setVolume(0,0);
+                try {
+                    mMediaPlayerMap.get(mMediaPlayerMap.keyAt(i)).setVolume(0, 0);
+                } catch (Exception e) {
+
+                }
             }
         } else {
             for (int i = 0; i < mMediaPlayerMap.size(); i++) {
-                mMediaPlayerMap.get(mMediaPlayerMap.keyAt(i)).setVolume(mVolume, mVolume);
+                try {
+                    mMediaPlayerMap.get(mMediaPlayerMap.keyAt(i)).setVolume(mVolume, mVolume);
+                } catch (Exception e){
+
+                }
             }
         }
     }
